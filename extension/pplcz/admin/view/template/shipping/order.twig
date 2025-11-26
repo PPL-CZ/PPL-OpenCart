@@ -1,0 +1,183 @@
+<div id='section-pplcz-parent' class="input-group">
+  <section id="section-pplcz" class="form-control" style="min-height: 64px;">
+    <div class="lead">
+      <strong>PPL.cz</strong>
+      {% for key, ppl in shipments %}
+      {% if not loop.first %} <hr/> {% endif %}
+      {% set shipment = ppl.data.shipment %}
+      <div>
+          <div>
+          {{shipment.serviceName}}, {{ shipment.packages|length }} balíky<br/>
+          {% if shipment.parcel %}
+          {{shipment.parcel.name}}, {{shipment.parcel.street}}, {{shipment.recipient.city}}
+          {% else %}
+          {{shipment.recipient.name}}, {{shipment.recipient.street}}, {{shipment.recipient.city}}
+          {% endif %}
+          </div>
+          {% if shipment.importErrors %}
+          <div class='alert alert-danger'>{{ shipment.importErrors | join("\n") }}</div>
+          {% endif %}
+          {% if ppl.data.errors %}
+          <div class='alert alert-danger'>
+          {%for err in ppl.data.errors %}
+            <div>{{err.values | join (" ")}} </div>
+          {% endfor %}
+          </div>
+          {% endif %}
+          {% if ppl.allowEdit %}
+          <button id={{ ppl.id ~ 'addPackage'}} data-url={{ppl.addPackage|json_encode}} type='button' class="btn btn-outline-primary addPackage">Přidat balík</button>
+          <button  data-shipment='{{shipment|json_encode}}' id={{ ppl.id ~ 'edit'}} type='button' data-refresh={{ppl.refresh|json_encode}}data-url={{ppl.create|json_encode}} class="btn btn-outline-secondary edit">Editovat</button>
+          {% if ppl.delete %}
+          <button  id={{ ppl.id ~ 'delete'}} type='button' data-url={{ppl.delete|json_encode}} class="btn btn-outline-danger delete">Zrušit</button>
+          {% endif %}
+          {% if ppl.batch %}
+          <button  id={{ ppl.id ~ 'batch'}} type='button' data-url={{ppl.batch|json_encode}} class="btn btn-outline-secondary batch">{{ ppl.batch_remove ? 'Netisknout' : "K tisku" }}</button>
+          {% endif %}
+          {%  if ppl.batchPrint %}
+              <button id={{ ppl.id ~ 'batchPrint' }} data-url={{ppl.batchPrint|json_encode}} class='btn btn-outline-secondary batch-print'>Nastavení</button>
+          {%  endif %}
+          {% endif %}
+          {% if ppl.packages %}
+          {% for package in ppl.packages %}
+            <div>
+                {{ package.shipmentNumber }}
+                ({{ package.phaseLabel }})
+                {% if package.cancelUrl %}<button  id={{ ppl.id ~ 'cancel'}} type='button' data-url={{package.cancelUrl|json_encode}} class="btn btn-outline-secondary cancel">Zrušit</button>{% endif %}
+                {% if package.testUrl %}<button  id={{ ppl.id ~ 'test'}} type='button' data-url={{package.testUrl|json_encode}} class="btn btn-outline-secondary test">Test</button>{% endif %}
+                {% if package.printUrl %}<button id={{ ppl.id ~ 'tisk'}} type='button' data-url={{package.printUrl|json_encode}} class="btn btn-outline-secondary etiketa">Etiketa</button>{% endif %}
+                {% if package.printUrlAll %}<button id={{ ppl.id ~ 'tisk'}} type='button' data-url={{package.printUrlAll|json_encode}} class="btn btn-outline-secondary etiketa">Etikety</button>{% endif %}
+                </div>
+          {% endfor %}
+          {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    <script type='text/javascript'>
+        jQuery('#section-pplcz-parent .addPackage, #section-pplcz-parent .batch, #section-pplcz-parent .cancel, #section-pplcz-parent .test').on("click", function() {
+            var url = jQuery(this).data('url');
+            jQuery.ajax({
+                url,
+                method: "PUT",
+                success: function (response)
+                {
+                    jQuery("#section-pplcz-parent").replaceWith(response.content)
+                }
+            });
+        });
+
+        jQuery('#section-pplcz-parent .etiketa').on("click", function() {
+
+            var ppl = window.PPLczPlugin || [];
+            var div = jQuery("<div>").appendTo('body');
+            var url = jQuery(this).data('url');
+
+            var a = document.createElement("a");
+            a.href = url;
+            url = new URL(a.href);
+
+            var unmount = null;
+            var render = null;
+            function createParams() {
+                var print = url.searchParams.get('print');
+                return {
+                  optionals: {{print.optionals|json_encode}},
+                  value: print,
+                  onChange: function(print) {
+                    url.searchParams.set("print", print);
+                    render(createParams());
+                  },
+                  onFinish: function() {
+                    window.open(url);
+                    unmount();
+                 },
+                 returnFunc: function(data) {
+
+                     unmount = data.unmount;
+                    render = data.render;
+                 }
+                }
+            }
+
+            PPLczPlugin.push(["selectLabelPrint", div[0], createParams()]);
+        });
+
+        jQuery('#section-pplcz-parent .edit').on("click", function() {
+            var url = jQuery(this).data('url');
+            var refresh = jQuery(this).data('refresh');
+
+            function newShipment(data) {
+                const PPLczPlugin = window.PPLczPlugin = window.PPLczPlugin || [];
+                let unmount = null;
+                const item = jQuery("<div>").prependTo("body")[0];
+                PPLczPlugin.push(["newShipment",item, {
+                                      shipment: data,
+                                      returnFunc: (data)=> {
+                                            unmount = data.unmount
+                                      },
+                                      onFinish: function() {
+                                            unmount();
+                                            jQuery.ajax({
+                                                url: refresh,
+                                                success: function (response)
+                                                {
+                                                    jQuery("#section-pplcz-parent").replaceWith(response.content)
+                                                }
+                                            })
+                                      },
+                                      onChange: function() {
+                                            jQuery.ajax({
+                                                url: refresh,
+                                                success: function (response)
+                                                {
+                                                    jQuery("#section-pplcz-parent").replaceWith(response.content)
+                                                }
+                                            })
+                                      }
+                }]);
+            }
+            if (url)
+            {
+                jQuery.ajax({
+                    url,
+                    method: "POST",
+                    success: function (response)
+                    {
+
+                        jQuery("#section-pplcz-parent").replaceWith(response.content);
+                        newShipment(response.shipment);
+                    }
+                });
+            }
+            else
+            {
+                var shipment = jQuery(this).data('shipment');
+                newShipment(shipment);
+            }
+        })
+        jQuery('#section-pplcz-parent .batch-print').on("click", function() {
+            var url = jQuery(this).data('url');
+            url = url.split('#');
+            if (url.length > 1) {
+                url[1] = decodeURIComponent(url[1])
+                url = url.join("#");
+            }
+            if (url)
+                window.open(url);
+        });
+
+        jQuery('#section-pplcz-parent .delete').on("click", function() {
+            var url = jQuery(this).data('url');
+            if (url)
+            jQuery.ajax({
+                url,
+                method: "DELETE",
+                success: function (response)
+                {
+                    jQuery("#section-pplcz-parent").replaceWith(response.content)
+                }
+            });
+        });
+        window.pplcz_data = "index.php?user_token={{user_token}}";
+    </script>
+  </section>
+</div>

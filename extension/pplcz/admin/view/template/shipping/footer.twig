@@ -1,0 +1,13 @@
+{% if show %}
+<script type="text/javascript">
+jQuery("#form-category > .nav.nav-tabs, #form-product > .nav.nav-tabs").append('<li class="nav-item" role="presentation"><a href="#tab-pplcz" data-bs-toggle="tab" class="nav-link" role="tab">PPL omezení</a></li>');
+jQuery("#form-category > .tab-content, #form-product > .tab-content").append('<div id="tab-pplcz" class="tab-pane"></div>')
+
+jQuery("#tab-pplcz").each(function() {
+    this.dataset['data'] = JSON.stringify({{ data|json_encode }});
+    this.dataset['methods'] = JSON.stringify({{ methods|json_encode}});
+});
+
+(window.PPLczPlugin || []).push(['pplItemSetting', 'tab-pplcz']);
+</script>
+{% endif %}

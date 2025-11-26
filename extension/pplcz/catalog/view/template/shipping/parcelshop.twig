@@ -1,0 +1,147 @@
+{# catalog/view/theme/<tema>/template/extension/module/parcelshop_badge.twig #}
+<div id="pplcz-method-container">
+{% if errors %}
+<div id="pplcz-errors" class="pplcz-errors">
+    {% for errs in errors %}
+    {% for err in errs %}
+    {{err}}<br/>
+    {% endfor %}
+    {% endfor %}
+</div>
+{% endif %}
+{% if parcelRequired and parcel %}
+  <div id="pplcz-parcel-select" class="pplcz-parcelshop pplcz-parcelshop-inner">
+    <a href="#" class="pplcz-select-parcelshop" {% for key, item in mapsetting %} {{key}}="{{item}}"{% endfor %}>
+        <img src="extension/pplcz/catalog/view/stylesheet/ps_pb.png">
+    </a>{{ parcel.name }}, {{ parcel.street }}, {{ parcel.zip }} {{ parcel.city }}<a href="#" class="pplcz-clear">[x]</a>
+  </div>
+{% elseif parcelRequired  %}
+<div id="pplcz-parcel-select" class="pplcz-parcelshop pplcz-parcelshop-inner">
+    <a href="#" class="pplcz-select-parcelshop" {% for key, item in mapsetting %}{{key}}="{{item}}"{% endfor %}>
+        <img src="extension/pplcz/catalog/view/stylesheet/ps_pb.png">
+    </a> Vyberte výdejní místo
+</div>
+{% else %}
+<div id="pplcz-parcel-select" class=" pplcz-parcelshop pplcz-parcelshop-hidden" >
+</div>
+{% endif %}
+{% if telefonRequired %}
+<div id="pplcz-telephone-number" class="pplcz-telephone">
+    <input type="text" class="form-control" placeholder="telefon pro komunikaci při dovozu" name="pplcz-telephone"  value="{{ telephone}}"/>
+</div>
+{% endif %}
+
+<script type="text/javascript">(function() {
+    const updateParcel = (data)=> {
+        const href = new URL(window.location.href);
+        href.searchParams.set("route", "extension/pplcz/shipping/parcel_shop.parcelSelect");
+        const setting = {
+            url: `${href}`,        // URL, kam posíláš požadavek
+            method: "POST",              // nebo "PUT" podle potřeby
+            contentType: "application/json",  // říká serveru, že posíláš JSON
+
+            success: function(response, status, xhr) {
+
+                jQuery("#pplcz-method-container").replaceWith(response);
+           }
+       }
+
+        if (data)
+            setting.data = JSON.stringify(data);
+
+        jQuery.ajax(setting);
+    };
+
+    const updateTelephone = (data)=> {
+        const href = new URL(window.location.href);
+        href.searchParams.set("route", "extension/pplcz/shipping/parcel_shop.telephoneSelect");
+        const setting = {
+            url: `${href}`,        // URL, kam posíláš požadavek
+            method: "POST",              // nebo "PUT" podle potřeby
+            contentType: "application/json",  // říká serveru, že posíláš JSON
+
+            success: function(response, status, xhr) {
+
+                jQuery("#pplcz-method-container").replaceWith(response);
+           }
+       }
+
+        if (data)
+            setting.data = JSON.stringify({ telephone: data });
+
+        jQuery.ajax(setting);
+    };
+
+    jQuery("#pplcz-telephone-number input").on('blur', function(ev)
+    {
+        updateTelephone(ev.target.value);
+    });
+
+    jQuery("#pplcz-telephone-number input").on('keyup', function(ev)
+    {
+        if (event.key === 'Enter')
+            updateTelephone(ev.target.value);
+    });
+
+    jQuery("#pplcz-parcel-select a.pplcz-clear").on("click", function(ev) {
+        ev.preventDefault();
+        updateParcel(null);
+    });
+
+    jQuery("#pplcz-parcel-select a.pplcz-select-parcelshop").on("click", function(ev) {
+        ev.preventDefault();
+
+
+        const mapSetting = {
+           address : jQuery(this).data('address') ?? null,
+           country : jQuery(this).data('country') ?? null,
+           hiddenPoints : jQuery(this).data('hidden-points') ?? null,
+           countries : jQuery(this).data('countries') ?? null
+        }
+
+        const what = jQuery(this).data("pplcz-select-parcel-shop");
+
+
+        PplMap(data => updateParcel(data), mapSetting);
+    });
+})()</script>
+</div>
+<script type="text/javascript">
+    if (jQuery("#pplcz-errors").length)
+    {
+        $('html, body').animate({
+            scrollTop: $('#pplcz-errors').offset().top
+        }, 500);
+    }
+    jQuery(document).ajaxComplete(function(event, jqXHR, settings) {
+        if (settings.url.indexOf("payment") > -1 && settings.url.indexOf('.confirm') > -1)
+        {
+            if (jqXHR.status === 400)
+            {
+                try {
+                    const parsed = JSON.parse(jqXHR.responseText);
+                    if (parsed.pplcz_error)
+                    {
+                        location.reload();
+                    }
+                }
+                catch (e)
+                {
+                }
+            }
+        }
+
+        if (settings.url.indexOf("shipping_method.save") > -1)
+        {
+            const href = new URL(window.location.href);
+            href.searchParams.set("route", "extension/pplcz/shipping/parcel_shop");
+            fetch(href).then(async x=> {
+                if (x.status === 200)
+                {
+                   const text = await x.text();
+                   jQuery("#pplcz-method-container").replaceWith(text);
+                }
+            });
+        }
+    });
+</script>

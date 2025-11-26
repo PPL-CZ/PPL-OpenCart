@@ -1,0 +1,16 @@
+{{ header }}{{ column_left }}
+<div id="content">
+  <div class="container-fluid">
+
+    <div class="card">
+      <div id="pplcz" class="card-body" style="padding:0px">
+      </div>
+    </div>
+  </div>
+  <script type="text/javascript" src="/extension/pplcz/src/Admin/MuiAdmin/build/static/js/bundle.js"></script>
+  <script type="text/javascript">
+      window.pplcz_data = "index.php?user_token={{user_token}}";
+      window.PPLczPlugin.push(['optionsPage', "pplcz"]);
+  </script>
+</div>
+{{ footer }}
