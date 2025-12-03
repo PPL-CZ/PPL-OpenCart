@@ -1,0 +1,14 @@
+<html>
+<head>
+    <meta charset="utf-8" />
+    <link rel='stylesheet' href="{{fronturl}}/extension/pplcz/catalog/view/stylesheet/map.css" />
+    <script type="text/javascript" src="{{fronturl}}/extension/pplcz/catalog/view/javascript/ppl-mapexternal.js" ></script>
+</head>
+<body>
+<div id="pplcz-parcelshop-info">PPL mapa</div>
+<body>
+<div id="ppl-parcelshop-map" {% for key, value in mapsetting %}{{key}}="{{value}}" {% endfor %}>
+</div>
+<script src="https://www.ppl.cz/sources/map/main.js?ver=1.0.29" id="ppl_external_js-js"></script>
+</body>
+</html>
