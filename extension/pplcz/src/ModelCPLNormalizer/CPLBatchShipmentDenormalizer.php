@@ -29,8 +29,7 @@ class CPLBatchShipmentDenormalizer implements DenormalizerInterface
 
 
 
-    public const INTEGRATOR = "4546462";
-    public const PROD_VERSION = false;
+    public const INTEGRATOR = "4764562";
 
     public function denormalize($data, string $type, ?string $format = null, array $context = [])
     {
